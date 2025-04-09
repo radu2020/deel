@@ -6,6 +6,11 @@ const { Op } = require('sequelize');
  */
 async function getContracts(req, res) {
   try {
+    // Check if the user is authenticated (make sure req.profile.id exists)
+    if (!req.profile || !req.profile.id) {
+      return res.status(401).json({ message: 'User not authenticated.' });
+    }
+
     // Fetch the contracts
     const { Contract, Profile } = req.app.get('models');
     const contracts = await Contract.findAll({
@@ -43,6 +48,11 @@ const getContractById = async (req, res) => {
   try {
     const { Contract } = req.app.get('models');
     const { id } = req.params;
+
+    // Validate that 'id' is a valid integer
+    if (!id || isNaN(id) || !Number.isInteger(parseInt(id))) {
+      return res.status(400).json({ message: 'Invalid contract ID.' });
+    }
 
     // Fetch the contract from the database
     const contract = await Contract.findOne({ where: { id } });

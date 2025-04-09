@@ -6,7 +6,11 @@ const getUnpaidJobsForActiveContracts = require('../services/job.service');
  */
 async function getUnpaidJobs(req, res) {
   try {
-    const userId = req.profile.id;
+    // Ensure user is authenticated
+    const userId = req.profile?.id;
+    if (!userId) {
+      return res.status(401).json({ message: 'User not authenticated.' });
+    }
 
     const unpaidJobs = await getUnpaidJobsForActiveContracts(userId);
 
@@ -38,6 +42,11 @@ async function payForJob(req, res) {
     const { Job, Contract, Profile } = req.app.get('models');
     const { job_id } = req.params;
     const clientId = req.profile.id;
+
+    // Validate that job_id is a valid integer
+    if (!job_id || isNaN(job_id) || !Number.isInteger(parseInt(job_id))) {
+      return res.status(400).json({ error: 'Invalid job ID.' });
+    }
 
     // Ensure the profile is a client
     if (req.profile.type !== 'client') {
@@ -74,6 +83,12 @@ async function payForJob(req, res) {
       lock: true, // Lock the row
       transaction,
     });
+
+    // Ensure both profiles exist
+    if (!clientProfile || !contractorProfile) {
+      await transaction.rollback();
+      return res.status(404).json({ error: 'Profile(s) not found.' });
+    }
 
     // Check if the client has enough balance to make the payment
     if (clientProfile.balance < job.price) {
@@ -122,7 +137,7 @@ async function payForJob(req, res) {
       updatedContractorBalance: contractorProfile.balance,
     });
   } catch (error) {
-    await transaction.rollback(); // Ensure rollback in case of any error
+    if (transaction) await transaction.rollback(); // Ensure rollback in case of any error
     console.error('Error processing payment:', error);
     res.status(500).json({ error: 'Internal Server Error' });
   }

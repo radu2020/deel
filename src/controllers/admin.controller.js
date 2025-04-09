@@ -16,6 +16,11 @@ const getProfileById = async (req, res) => {
 
     const { id } = req.params;
 
+    // Validate that 'id' is a valid integer
+    if (!id || isNaN(id) || !Number.isInteger(parseInt(id))) {
+      return res.status(400).json({ message: 'Invalid profile ID.' });
+    }
+
     // Fetch the profile from the database
     const profile = await Profile.findOne({ where: { id } });
 
@@ -39,8 +44,17 @@ const getProfileById = async (req, res) => {
 const getBestProfession = async (req, res) => {
   const { start, end } = req.query;
 
+  // Validate start and end dates
   if (!start || !end) {
     return res.status(400).json({ error: 'Missing start or end date' });
+  }
+
+  const startDate = new Date(start);
+  const endDate = new Date(end);
+
+  // Ensure valid date format
+  if (isNaN(startDate) || isNaN(endDate)) {
+    return res.status(400).json({ error: 'Invalid date format. Please provide valid start and end dates.' });
   }
 
   try {
@@ -56,7 +70,7 @@ const getBestProfession = async (req, res) => {
       where: {
         paid: true,
         paymentDate: {
-          [Op.between]: [new Date(start), new Date(end)]
+          [Op.between]: [startDate, endDate]
         }
       },
       include: [{
@@ -100,12 +114,25 @@ const getBestProfession = async (req, res) => {
 const getBestClients = async (req, res) => {
   const { start, end, limit = 2 } = req.query;
 
+  // Validate start and end dates
   if (!start || !end) {
     return res.status(400).json({ error: 'Missing start or end date' });
   }
 
-  try {
+  const startDate = new Date(start);
+  const endDate = new Date(end);
 
+  // Ensure valid date format
+  if (isNaN(startDate) || isNaN(endDate)) {
+    return res.status(400).json({ error: 'Invalid date format. Please provide valid start and end dates.' });
+  }
+
+  // Validate limit (ensure it's a positive integer)
+  if (isNaN(limit) || parseInt(limit) <= 0) {
+    return res.status(400).json({ error: 'Invalid limit. Please provide a positive integer for limit.' });
+  }
+
+  try {
     const { Profile, Job, Contract } = req.app.get('models');
 
     const requestingUser = await Profile.findOne({ where: { id: req.profile.id } });
@@ -118,7 +145,7 @@ const getBestClients = async (req, res) => {
       where: {
         paid: true,
         paymentDate: {
-          [Op.between]: [new Date(start), new Date(end)]
+          [Op.between]: [startDate, endDate]
         }
       },
       include: [{

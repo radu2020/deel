@@ -9,6 +9,16 @@ async function depositToBalance(req, res) {
   const { userId } = req.params;
   const { amount } = req.body;
 
+  // Validate userId
+  if (!userId || isNaN(userId) || !Number.isInteger(parseInt(userId))) {
+    return res.status(400).json({ message: 'Invalid user ID.' });
+  }
+
+  // Validate amount
+  if (!amount || isNaN(amount) || parseFloat(amount) <= 0) {
+    return res.status(400).json({ message: 'Invalid deposit amount. It must be a positive number.' });
+  }
+
   // Prevent user from depositing into someone else's account
   if (parseInt(userId) !== req.profile.id) {
     return res.status(403).json({ message: 'You are not authorized to deposit into this account.' });
