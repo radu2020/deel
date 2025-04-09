@@ -138,7 +138,6 @@ describe('payForJob', () => {
 
   it('should handle internal server errors gracefully', async () => {
     const error = new Error('Something went wrong');
-    console.log("error = ", error)
     req.app.get = jest.fn((key) => {
       if (key === 'sequelize') return sequelize;
       if (key === 'models') {
