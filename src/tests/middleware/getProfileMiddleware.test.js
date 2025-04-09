@@ -1,66 +1,80 @@
-const request = require('supertest');
-const app = require('../../app');
-const { Contract, Profile } = require('../../models');
+const { getProfile } = require('../../middleware/getProfile');
 
-describe('GET /contracts/1', () => {
-  it('should attach profile to request and call next when profile_id is valid', async () => {
-    const mockProfile = {
-      id: 1,
-      firstName: 'Harry',
-      lastName: 'Potter',
-      profession: 'Wizard',
-      balance: 1150,
-      type: 'client'
+describe('getProfile Middleware', () => {
+  let req, res, next, Profile;
+
+  beforeEach(() => {
+    Profile = {
+      findOne: jest.fn()
     };
-    const mockContract = {
-      id: 1,
-      terms: 'bla bla bla',
-      status: 'in_progress',
-      ClientId: 1,
-      ContractorId: 2
+
+    req = {
+      get: jest.fn(),
+      app: {
+        get: jest.fn(() => ({ Profile }))
+      }
     };
-    Contract.findOne = jest.fn().mockResolvedValue(mockContract);
-    Profile.findOne = jest.fn().mockResolvedValue(mockProfile);
 
-    const response = await request(app)
-      .get('/contracts/1')
-      .set('profile_id', '1');
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn()
+    };
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(mockContract);
+    next = jest.fn();
   });
 
-  it('should return 400 if profile_id is missing or invalid', async () => {
-    // Test with no profile_id header
-    let response = await request(app).get('/contracts/1');
-    expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'Missing profile_id header' });
+  it('should return 400 if profile_id is missing', async () => {
+    req.get.mockReturnValue(undefined);
 
-    // Test with an invalid profile_id header
-    response = await request(app).get('/contracts/1').set('profile_id', 'invalid_id');
-    expect(response.status).toBe(400);
-    expect(response.body).toEqual({ error: 'Invalid profile_id header' });
+    await getProfile(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Missing profile_id header' });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it('should return 401 if the profile is not found', async () => {
-    Profile.findOne = jest.fn().mockResolvedValue(null);
+  it('should return 400 if profile_id is not a number', async () => {
+    req.get.mockReturnValue('abc');
 
-    const response = await request(app)
-      .get('/contracts/1')
-      .set('profile_id', '1');
+    await getProfile(req, res, next);
 
-    expect(response.status).toBe(401);
-    expect(response.body).toEqual({ error: 'Unauthorized: Profile not found' });
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Invalid profile_id header' });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it('should return 500 if there is an internal error', async () => {
-    Profile.findOne = jest.fn().mockRejectedValue(new Error('Database error'));
+  it('should return 401 if profile not found', async () => {
+    req.get.mockReturnValue('1');
+    Profile.findOne.mockResolvedValue(null);
 
-    const response = await request(app)
-      .get('/contracts/1')
-      .set('profile_id', '1');
+    await getProfile(req, res, next);
 
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({ error: 'Internal Server Error' });
+    expect(Profile.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: Profile not found' });
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it('should set req.profile and call next if profile is found', async () => {
+    const fakeProfile = { id: 1, name: 'Test User' };
+    req.get.mockReturnValue('1');
+    Profile.findOne.mockResolvedValue(fakeProfile);
+
+    await getProfile(req, res, next);
+
+    expect(Profile.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
+    expect(req.profile).toBe(fakeProfile);
+    expect(next).toHaveBeenCalled();
+  });
+
+  it('should handle unexpected errors and return 500', async () => {
+    req.get.mockReturnValue('1');
+    Profile.findOne.mockRejectedValue(new Error('DB error'));
+
+    await getProfile(req, res, next);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Internal Server Error' });
+    expect(next).not.toHaveBeenCalled();
   });
 });

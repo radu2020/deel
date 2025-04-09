@@ -1,169 +1,120 @@
-const request = require('supertest');
-const app = require('../../app');
+const { getContracts, getContractById } = require('../../controllers/contract.controller');
+const Sequelize = require('sequelize');
+
+jest.mock('../../models', () => ({
+  Contract: { findAll: jest.fn(), findOne: jest.fn() },
+  Profile: {},
+}));
 
 const { Contract, Profile } = require('../../models');
 
-describe('GET /contracts/:id', () => {
-  it('should return contract when found and authorized', async () => {
-    const mockContract = {
-      id: 1,
-      terms: 'bla bla bla',
-      status: 'in_progress',
-      ClientId: 1,
-      ContractorId: 2
+describe('Contracts Controller', () => {
+  let req, res;
+
+  beforeEach(() => {
+    req = {
+      profile: { id: 1 },
+      params: {},
+      app: {
+        get: jest.fn(() => ({ Contract }))
+      }
     };
 
-    const mockProfile = {
-      id: 1,
-      firstName: 'Harry',
-      lastName: 'Potter',
-      profession: 'Wizard',
-      balance: 1150,
-      type: 'client'
+    res = {
+      status: jest.fn().mockReturnThis(),
+      json: jest.fn(),
+      end: jest.fn()
     };
 
-    Contract.findOne = jest.fn().mockResolvedValue(mockContract);
-    Profile.findOne = jest.fn().mockResolvedValue(mockProfile);
-
-    const response = await request(app)
-      .get('/contracts/1')
-      .set('profile_id', 1);
-
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(mockContract);
+    jest.clearAllMocks();
   });
 
-  it('should return 404 when contract is not found', async () => {
-    const mockProfile = {
-      id: 1,
-      firstName: 'Harry',
-      lastName: 'Potter',
-      profession: 'Wizard',
-      balance: 1150,
-      type: 'client'
-    };
+  // === getContracts ===
+  describe('getContracts', () => {
+    it('should return contracts if found', async () => {
+      const fakeContracts = [{ id: 1 }, { id: 2 }];
+      Contract.findAll.mockResolvedValue(fakeContracts);
 
-    Contract.findOne = jest.fn().mockResolvedValue(null);
-    Profile.findOne = jest.fn().mockResolvedValue(mockProfile);
+      await getContracts(req, res);
 
-    const response = await request(app)
-      .get('/contracts/1')
-      .set('profile_id', 1);
+      expect(Contract.findAll).toHaveBeenCalledWith({
+        where: {
+          status: { [Sequelize.Op.ne]: 'terminated' },
+          [Sequelize.Op.or]: [
+            { ClientId: req.profile.id },
+            { ContractorId: req.profile.id },
+          ],
+        },
+        include: [
+          { model: Profile, as: 'Client' },
+          { model: Profile, as: 'Contractor' },
+        ],
+      });
 
-    expect(response.status).toBe(404);
+      expect(res.json).toHaveBeenCalledWith(fakeContracts);
+    });
+
+    it('should return 404 if no contracts are found', async () => {
+      Contract.findAll.mockResolvedValue([]);
+
+      await getContracts(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.json).toHaveBeenCalledWith({ message: 'No contracts found for this user' });
+    });
+
+    it('should return 500 on error', async () => {
+      Contract.findAll.mockRejectedValue(new Error('DB error'));
+
+      await getContracts(req, res);
+
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ message: 'Internal Server Error' });
+    });
   });
 
-  it('should return 401 when the user is not authorized', async () => {
-    const mockProfile = {
-      id: 3,
-      firstName: 'Harry',
-      lastName: 'Potter',
-      profession: 'Wizard',
-      balance: 1150,
-      type: 'client'
-    };
-    // Mock a contract where the user is not authorized
-    const mockContract = {
-      id: 1,
-      terms: 'bla bla bla',
-      status: 'in_progress',
-      ClientId: 1,
-      ContractorId: 2
-    };
-    Contract.findOne = jest.fn().mockResolvedValue(mockContract);
-    Profile.findOne = jest.fn().mockResolvedValue(mockProfile);
+  // === getContractById ===
+  describe('getContractById', () => {
+    it('should return the contract if user is authorized', async () => {
+      const contract = { id: 1, ClientId: 1, ContractorId: 2 };
+      req.params.id = '1';
+      Contract.findOne.mockResolvedValue(contract);
 
-    const response = await request(app)
-      .get('/contracts/1')
-      .set('profile_id', 3);
+      await getContractById(req, res);
 
-    expect(response.status).toBe(401);
-  });
+      expect(Contract.findOne).toHaveBeenCalledWith({ where: { id: '1' } });
+      expect(res.json).toHaveBeenCalledWith(contract);
+    });
 
-  it('should return 500 on server error', async () => {
-    const mockProfile = {
-      id: 1,
-      firstName: 'Harry',
-      lastName: 'Potter',
-      profession: 'Wizard',
-      balance: 1150,
-      type: 'client'
-    };
+    it('should return 404 if contract is not found', async () => {
+      req.params.id = '1';
+      Contract.findOne.mockResolvedValue(null);
 
-    // Mock the database to throw an error
-    Contract.findOne = jest.fn().mockRejectedValue(new Error('Database error'));
-    Profile.findOne = jest.fn().mockResolvedValue(mockProfile);
+      await getContractById(req, res);
 
-    const response = await request(app)
-      .get('/contracts/1')
-      .set('profile_id', 1);
+      expect(res.status).toHaveBeenCalledWith(404);
+      expect(res.end).toHaveBeenCalled();
+    });
 
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({ error: 'Internal server error' });
-  });
-});
+    it('should return 401 if user is not part of the contract', async () => {
+      const contract = { id: 1, ClientId: 2, ContractorId: 3 }; // Not matching req.profile.id (1)
+      req.params.id = '1';
+      Contract.findOne.mockResolvedValue(contract);
 
-describe('GET /contracts', () => {
-  it('should return contracts for the client or contractor', async () => {
-    // Mock the Profile for the test user
-    const mockProfile = {
-      id: 1,
-      firstName: 'Harry',
-      lastName: 'Potter',
-      profession: 'Wizard',
-      balance: 1150,
-      type: 'client'
-    };
-    // Mock the contracts response from the database
-    const mockContracts = [
-      {
-        id: 1,
-        terms: 'bla bla bla',
-        status: 'in_progress',
-        ClientId: 1,
-        ContractorId: 2
-      },
-      {
-        id: 2,
-        terms: 'bla bla bla',
-        status: 'in_progress',
-        ClientId: 1,
-        ContractorId: 2
-      },
-    ];
+      await getContractById(req, res);
 
-    Profile.findOne = jest.fn().mockResolvedValue(mockProfile);
-    Contract.findAll = jest.fn().mockResolvedValue(mockContracts);
+      expect(res.status).toHaveBeenCalledWith(401);
+      expect(res.end).toHaveBeenCalled();
+    });
 
-    const response = await request(app)
-      .get('/contracts')
-      .set('profile_id', '1'); // Set the profile_id header to simulate an authenticated user
+    it('should return 500 on error', async () => {
+      req.params.id = '1';
+      Contract.findOne.mockRejectedValue(new Error('DB failure'));
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(mockContracts); // Ensure the correct contracts are returned
-  });
+      await getContractById(req, res);
 
-  it('should return 404 if no contracts are found for the user', async () => {
-    // Mock that no contracts were found
-    Contract.findAll.mockResolvedValue([]);
-
-    const response = await request(app)
-      .get('/contracts')
-      .set('profile_id', '1');
-
-    expect(response.status).toBe(404);
-    expect(response.body).toEqual({ message: 'No contracts found for this user' });
-  });
-
-  it('should return 500 if there is an internal server error', async () => {
-    // Mock a database error by rejecting the findAll query
-    Contract.findAll.mockRejectedValue(new Error('Database error'));
-
-    const response = await request(app)
-      .get('/contracts')
-      .set('profile_id', '1');
-
-    expect(response.status).toBe(500);
-    expect(response.body).toEqual({ message: 'Internal Server Error' });
+      expect(res.status).toHaveBeenCalledWith(500);
+      expect(res.json).toHaveBeenCalledWith({ error: 'Internal server error' });
+    });
   });
 });

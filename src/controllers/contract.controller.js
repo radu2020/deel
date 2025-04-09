@@ -1,5 +1,4 @@
-const { Contract, Profile } = require('../models');
-const Sequelize = require('sequelize');
+const { Op } = require('sequelize');
 
 /**
  * GET /contracts
@@ -8,12 +7,13 @@ const Sequelize = require('sequelize');
 async function getContracts(req, res) {
   try {
     // Fetch the contracts
+    const { Contract, Profile } = req.app.get('models');
     const contracts = await Contract.findAll({
       where: {
         status: { // Only include non-terminated contracts
-          [Sequelize.Op.ne]: 'terminated',
+          [Op.ne]: 'terminated',
         },
-        [Sequelize.Op.or]: [
+        [Op.or]: [
           { ClientId: req.profile.id },
           { ContractorId: req.profile.id },
         ],

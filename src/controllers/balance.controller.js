@@ -1,6 +1,4 @@
-const { Profile } = require('../models');
 const getUnpaidJobsForActiveContracts = require('../services/job.service');
-
 
 /**
  * POST /balances/deposit/:userId
@@ -16,9 +14,13 @@ async function depositToBalance(req, res) {
     return res.status(403).json({ message: 'You are not authorized to deposit into this account.' });
   }
 
-  const t = await req.app.get('sequelize').transaction(); // Start a new transaction
+  const { Profile } = req.app.get('models');
+  const sequelize = req.app.get('sequelize');
+
+  const t = await sequelize.transaction(); // Start a new transaction
 
   try {
+    
     // Lock the profile row to prevent concurrent writes
     const profile = await Profile.findOne({
       where: { id: userId },

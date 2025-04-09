@@ -1,5 +1,3 @@
-// controllers/admin.controller.js
-const { Job, Profile, Contract } = require('../models');
 const { Op, fn, col } = require('sequelize');
 
 /**
@@ -44,8 +42,10 @@ const getBestProfession = async (req, res) => {
   if (!start || !end) {
     return res.status(400).json({ error: 'Missing start or end date' });
   }
-  // TODO: check imports and make everywhere either from request either explicit import in the begin of file.
+
   try {
+    const { Profile, Job, Contract } = req.app.get('models');
+
     const requestingUser = await Profile.findOne({ where: { id: req.profile.id } });
 
     if (!requestingUser || requestingUser.type !== 'admin') {
@@ -106,7 +106,7 @@ const getBestClients = async (req, res) => {
 
   try {
 
-    const { Profile } = req.app.get('models');
+    const { Profile, Job, Contract } = req.app.get('models');
 
     const requestingUser = await Profile.findOne({ where: { id: req.profile.id } });
 

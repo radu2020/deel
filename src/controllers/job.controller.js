@@ -1,4 +1,3 @@
-const { Job, Contract, Profile } = require('../models');
 const getUnpaidJobsForActiveContracts = require('../services/job.service');
 
 /**
@@ -29,7 +28,10 @@ async function getUnpaidJobs(req, res) {
  * from the client's balance to the contractor's balance.
  */
 async function payForJob(req, res) {
-  const transaction = await req.app.get('sequelize').transaction(); // Start a new transaction
+  const { Job, Contract, Profile } = req.app.get('models');
+  const sequelize = req.app.get('sequelize');
+
+  const transaction = await sequelize.transaction(); // Start a new transaction
 
   try {
     const { job_id } = req.params;
