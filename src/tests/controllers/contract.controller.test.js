@@ -16,7 +16,7 @@ describe('Contracts Controller', () => {
       profile: { id: 1 },
       params: {},
       app: {
-        get: jest.fn(() => ({ Contract }))
+        get: jest.fn(() => ({ Contract, Profile }))
       }
     };
 

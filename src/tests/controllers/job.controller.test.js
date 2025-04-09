@@ -42,7 +42,7 @@ describe('GET /jobs/unpaid', () => {
     expect(response.body).toEqual(mockJobs);
   });
 
-  it('should return empty list if no jobs are found for the user', async () => {
+  it('should return 404 if no jobs are found for the user', async () => {
     const mockProfile = {
       id: 1,
       firstName: 'Harry',
@@ -60,8 +60,8 @@ describe('GET /jobs/unpaid', () => {
       .get('/jobs/unpaid')
       .set('profile_id', '1');
 
-    expect(response.status).toBe(200);
-    expect(response.body).toEqual(mockJobs);
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ message: 'No unpaid jobs found for this user' });
   });
 
   it('should return 500 if there is an internal server error', async () => {
@@ -76,3 +76,4 @@ describe('GET /jobs/unpaid', () => {
     expect(response.body).toEqual({ error: 'Internal Server Error' });
   });
 });
+
