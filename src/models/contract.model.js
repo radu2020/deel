@@ -1,7 +1,7 @@
 const { Model, DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  class Contract extends Model {}
+  class Contract extends Model { }
 
   Contract.init(
     {

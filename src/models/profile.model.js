@@ -1,7 +1,7 @@
 const { Model, DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  class Profile extends Model {}
+  class Profile extends Model { }
 
   Profile.init(
     {

@@ -6,7 +6,7 @@ const getUnpaidJobsForActiveContracts = require('../services/job.service');
  * Get all unpaid jobs for a user (either a client or contractor).
  */
 async function getUnpaidJobs(req, res) {
-    try {
+  try {
     const userId = req.profile.id;
 
     const unpaidJobs = await getUnpaidJobsForActiveContracts(userId);
@@ -28,7 +28,7 @@ async function getUnpaidJobs(req, res) {
  * than or equal to the amount due. The payment amount should be moved 
  * from the client's balance to the contractor's balance.
  */
- async function payForJob (req, res) {
+async function payForJob(req, res) {
   const transaction = await req.app.get('sequelize').transaction(); // Start a new transaction
 
   try {
@@ -124,4 +124,4 @@ async function getUnpaidJobs(req, res) {
   }
 };
 
-module.exports = { getUnpaidJobs, payForJob};
+module.exports = { getUnpaidJobs, payForJob };

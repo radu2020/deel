@@ -5,19 +5,19 @@ const { Contract, Profile } = require('../../models');
 describe('GET /contracts/1', () => {
   it('should attach profile to request and call next when profile_id is valid', async () => {
     const mockProfile = {
-        id: 1,
-        firstName: 'Harry',
-        lastName: 'Potter',
-        profession: 'Wizard',
-        balance: 1150,
-        type:'client'
+      id: 1,
+      firstName: 'Harry',
+      lastName: 'Potter',
+      profession: 'Wizard',
+      balance: 1150,
+      type: 'client'
     };
     const mockContract = {
-        id:1,
-        terms: 'bla bla bla',
-        status: 'in_progress',
-        ClientId: 1,
-        ContractorId: 2
+      id: 1,
+      terms: 'bla bla bla',
+      status: 'in_progress',
+      ClientId: 1,
+      ContractorId: 2
     };
     Contract.findOne = jest.fn().mockResolvedValue(mockContract);
     Profile.findOne = jest.fn().mockResolvedValue(mockProfile);

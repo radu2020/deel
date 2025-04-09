@@ -1,7 +1,7 @@
 const { Model, DataTypes } = require('sequelize');
 
 module.exports = (sequelize) => {
-  class Job extends Model {}
+  class Job extends Model { }
 
   Job.init(
     {

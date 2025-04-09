@@ -40,28 +40,28 @@ async function getContracts(req, res) {
  * Returns a contract if found and the user has the proper permissions
  */
 const getContractById = async (req, res) => {
-    try {
-        const { Contract } = req.app.get('models');
-        const { id } = req.params;
+  try {
+    const { Contract } = req.app.get('models');
+    const { id } = req.params;
 
-        // Fetch the contract from the database
-        const contract = await Contract.findOne({ where: { id } });
-        
-        if (!contract) {
-            return res.status(404).end();
-        }
+    // Fetch the contract from the database
+    const contract = await Contract.findOne({ where: { id } });
 
-        // Authorize request. Check if the user is part of this contract
-        if (contract.ClientId !== req.profile.id && contract.ContractorId !== req.profile.id) {
-            return res.status(401).end();
-        }
-
-        // Return the contract
-        res.json(contract);
-    } catch (err) {
-        console.error('Error fetching contract:', err);
-        res.status(500).json({ error: 'Internal server error' });
+    if (!contract) {
+      return res.status(404).end();
     }
+
+    // Authorize request. Check if the user is part of this contract
+    if (contract.ClientId !== req.profile.id && contract.ContractorId !== req.profile.id) {
+      return res.status(401).end();
+    }
+
+    // Return the contract
+    res.json(contract);
+  } catch (err) {
+    console.error('Error fetching contract:', err);
+    res.status(500).json({ error: 'Internal server error' });
+  }
 };
 
 module.exports = { getContracts, getContractById };
