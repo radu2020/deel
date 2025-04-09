@@ -14,13 +14,13 @@ async function depositToBalance(req, res) {
     return res.status(403).json({ message: 'You are not authorized to deposit into this account.' });
   }
 
-  const { Profile } = req.app.get('models');
-  const sequelize = req.app.get('sequelize');
-
-  const t = await sequelize.transaction(); // Start a new transaction
-
+  let t;
   try {
-    
+    const { Profile } = req.app.get('models');
+    const sequelize = req.app.get('sequelize');
+
+    t = await sequelize.transaction();
+
     // Lock the profile row to prevent concurrent writes
     const profile = await Profile.findOne({
       where: { id: userId },
