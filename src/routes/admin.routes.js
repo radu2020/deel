@@ -7,5 +7,4 @@ router.get('/profiles/:id', getProfile, adminController.getProfileById);
 router.get('/best-profession', getProfile, adminController.getBestProfession);
 router.get('/best-clients', getProfile, adminController.getBestClients);
 
-
 module.exports = router;

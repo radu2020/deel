@@ -3,7 +3,6 @@ const getProfile = async (req, res, next) => {
     const { Profile } = req.app.get('models');
     const profileId = req.get('profile_id');
 
-    // Validate profile_id is valid number
     if (!profileId) {
       return res.status(400).json({ error: 'Missing profile_id header' });
     }

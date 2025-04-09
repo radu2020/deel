@@ -2,7 +2,7 @@ const {
     getProfileById,
     getBestProfession,
     getBestClients
-} = require('../../controllers/admin.controller'); // <-- Update path accordingly
+} = require('../../controllers/admin.controller');
 
 const mockFindOne = jest.fn();
 const mockFindAll = jest.fn();

@@ -1,4 +1,4 @@
-const { payForJob } = require('../../controllers/job.controller'); // Adjust path
+const { payForJob } = require('../../controllers/job.controller');
 const { mockRequest, mockResponse } = require('jest-mock-req-res');
 
 describe('payForJob', () => {
