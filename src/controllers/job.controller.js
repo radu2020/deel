@@ -33,12 +33,12 @@ async function getUnpaidJobs(req, res) {
  */
 async function payForJob(req, res) {
   let transaction;
-  
+
   try {
     const sequelize = req.app.get('sequelize');
 
     transaction = await sequelize.transaction(); // Start a new transaction
-    
+
     const { Job, Contract, Profile } = req.app.get('models');
     const { job_id } = req.params;
     const clientId = req.profile.id;
