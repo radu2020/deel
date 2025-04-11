@@ -1,10 +1,10 @@
-const { getProfile } = require('../middleware/getProfile');
-const adminController = require('../controllers/admin.controller');
 const express = require('express');
+const adminController = require('../controllers/admin.controller');
+
 const router = express.Router();
 
-router.get('/profiles/:id', getProfile, adminController.getProfileById);
-router.get('/best-profession', getProfile, adminController.getBestProfession);
-router.get('/best-clients', getProfile, adminController.getBestClients);
+router.get('/profiles/:id', adminController.getProfileById);
+router.get('/best-profession', adminController.getBestProfession);
+router.get('/best-clients', adminController.getBestClients);
 
 module.exports = router;

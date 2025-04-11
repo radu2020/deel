@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>API Frontend Demo</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+        }
+
+        .section {
+            margin-bottom: 20px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #0056b3;
+        }
+
+        .result {
+            margin-top: 15px;
+            padding: 10px;
+            background-color: #f8f9fa;
+            border: 1px solid #ddd;
+        }
+
+        pre {
+            background-color: #f0f0f0;
+            padding: 10px;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+
+        pre code {
+            color: #333;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Frontend API Demo</h1>
+
+    <!-- Section: Input for profile_id -->
+    <div class="section">
+        <h3>Enter Profile ID (Hint: Admin is 9)</h3>
+        <input type="text" id="profileId" placeholder="Enter Profile ID">
+    </div>
+
+    <!-- Section 1: Get Contract by ID -->
+    <div class="section">
+        <h3>Get Contract by ID</h3>
+        <input type="text" id="contractId" placeholder="Enter Contract ID">
+        <button onclick="getContract()">Get Contract</button>
+        <div id="contractResult" class="result"></div>
+    </div>
+
+    <!-- Section 2: Get List of Non-Terminated Contracts -->
+    <div class="section">
+        <h3>Get List of Non-Terminated Contracts</h3>
+        <button onclick="getContracts()">Get Contracts</button>
+        <div id="contractsResult" class="result"></div>
+    </div>
+
+    <!-- Section 3: Get Unpaid Jobs -->
+    <div class="section">
+        <h3>Get Unpaid Jobs</h3>
+        <button onclick="getUnpaidJobs()">Get Unpaid Jobs</button>
+        <div id="unpaidJobsResult" class="result"></div>
+    </div>
+
+    <!-- Section 4: Pay for Job -->
+    <div class="section">
+        <h3>Pay for Job</h3>
+        <input type="text" id="jobId" placeholder="Enter Job ID">
+        <button onclick="payForJob()">Pay Job</button>
+        <div id="payJobResult" class="result"></div>
+    </div>
+
+    <!-- Section 5: Deposit Money -->
+    <div class="section">
+        <h3>Deposit Money</h3>
+        <input type="text" id="userId" placeholder="Enter User ID">
+        <input type="number" id="depositAmount" placeholder="Enter Deposit Amount">
+        <button onclick="depositMoney()">Deposit Money</button>
+        <div id="depositResult" class="result"></div>
+    </div>
+
+    <!-- Section 6: Best Profession -->
+    <div class="section">
+        <h3>Get Best Profession</h3>
+        <input type="date" id="startDate">
+        <input type="date" id="endDate">
+        <button onclick="getBestProfession()">Get Best Profession</button>
+        <div id="bestProfessionResult" class="result"></div>
+    </div>
+
+    <!-- Section 7: Best Clients -->
+    <div class="section">
+        <h3>Get Best Clients</h3>
+        <input type="date" id="bestClientsStartDate">
+        <input type="date" id="bestClientsEndDate">
+        <input type="number" id="limitClients" value="2" placeholder="Enter Limit">
+        <button onclick="getBestClients()">Get Best Clients</button>
+        <div id="bestClientsResult" class="result"></div>
+    </div>
+
+    <!-- Section 8: Get Profile by ID -->
+    <div class="section">
+        <h3>Get Profile by ID</h3>
+        <input type="text" id="requestedProfileId" placeholder="Enter Profile ID">
+        <button onclick="getProfile()">Get Profile</button>
+        <div id="profileResult" class="result"></div>
+    </div>
+
+    <script>
+        const apiBaseUrl = 'http://localhost:3001';
+
+        function getProfileId() {
+            return document.getElementById('profileId').value;
+        }
+
+        function prettyPrintJson(json) {
+            return `<pre><code>${JSON.stringify(json, null, 2)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')}</code></pre>`;
+        }
+
+        async function handleRequest(url, options, resultElementId) {
+            try {
+                const response = await fetch(url, options);
+                const contentType = response.headers.get("content-type");
+                console.log("response=", response)
+
+                if (!response.ok) {
+                    let errorMsg = `Error ${response.status}`;
+                    if (contentType && contentType.includes("application/json")) {
+                        const errorData = await response.json();
+                        errorMsg += `:\n${prettyPrintJson(errorData)}`;
+                    } else {
+                        const text = await response.text();
+                        errorMsg += `:\n<pre>${text}</pre>`;
+                    }
+                    document.getElementById(resultElementId).innerHTML = errorMsg;
+                    return;
+                }
+
+                const data = await response.json();
+                document.getElementById(resultElementId).innerHTML = prettyPrintJson(data);
+            } catch (err) {
+                document.getElementById(resultElementId).innerHTML = `<pre>Network Error: ${err.message}</pre>`;
+            }
+        }
+
+        async function getContract() {
+            const contractId = document.getElementById('contractId').value;
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/contracts/${contractId}`, {
+                method: 'GET',
+                headers: { 'profile_id': profileId }
+            }, 'contractResult');
+        }
+
+        async function getContracts() {
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/contracts`, {
+                method: 'GET',
+                headers: { 'profile_id': profileId }
+            }, 'contractsResult');
+        }
+
+        async function getProfile() {
+            const requestedProfileId = document.getElementById('requestedProfileId').value;
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/admin/profiles/${requestedProfileId}`, {
+                method: 'GET',
+                headers: { 'profile_id': profileId }
+            }, 'profileResult');
+        }
+
+        async function getUnpaidJobs() {
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/jobs/unpaid`, {
+                method: 'GET',
+                headers: { 'profile_id': profileId }
+            }, 'unpaidJobsResult');
+        }
+
+        async function payForJob() {
+            const jobId = document.getElementById('jobId').value;
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/jobs/${jobId}/pay`, {
+                method: 'POST',
+                headers: {
+                    'profile_id': profileId,
+                    'Content-Type': 'application/json'
+                }
+            }, 'payJobResult');
+        }
+
+        async function depositMoney() {
+            const userId = document.getElementById('userId').value;
+            const depositAmount = document.getElementById('depositAmount').value;
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/balances/deposit/${userId}`, {
+                method: 'POST',
+                headers: {
+                    'profile_id': profileId,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ amount: depositAmount })
+            }, 'depositResult');
+        }
+
+        async function getBestProfession() {
+            const startDate = document.getElementById('startDate').value;
+            const endDate = document.getElementById('endDate').value;
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/admin/best-profession?start=${startDate}&end=${endDate}`, {
+                method: 'GET',
+                headers: { 'profile_id': profileId }
+            }, 'bestProfessionResult');
+        }
+
+        async function getBestClients() {
+            const startDate = document.getElementById('bestClientsStartDate').value;
+            const endDate = document.getElementById('bestClientsEndDate').value;
+            const limit = document.getElementById('limitClients').value;
+            const profileId = getProfileId();
+            await handleRequest(`${apiBaseUrl}/admin/best-clients?start=${startDate}&end=${endDate}&limit=${limit}`, {
+                method: 'GET',
+                headers: { 'profile_id': profileId }
+            }, 'bestClientsResult');
+        }
+    </script>
+
+</body>
+
+</html>

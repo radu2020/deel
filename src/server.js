@@ -1,8 +1,11 @@
+// Load environment variables
+require('dotenv').config();
+
 const app = require('./app');
 
 async function start() {
   try {
-    const PORT = process.env.PORT || 3001;
+    const PORT = process.env.SERVER_PORT || 3000;
     app.listen(PORT, () => {
       console.log(`Express App Listening on Port ${PORT}`);
     });
